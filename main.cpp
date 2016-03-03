@@ -42,7 +42,7 @@ int main() {
     test_point_distance(ec, NumIters);
     test_point_IO(ec, NumIters);
 
-    // cluster tests
+    //cluster tests
     test_cluster_smoketest(ec);
     test_cluster_subscript(ec, NumIters);
     test_cluster_equality(ec, NumIters);

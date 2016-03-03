@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <fstream>
 
+
 #include "ClusteringTests.h"
 #include "Point.h"
 #include "Cluster.h"

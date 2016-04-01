@@ -1,158 +1,380 @@
+#include <iostream>
 #include <sstream>
-#include <fstream>
-#include <algorithm>
-#include "Cluster.h"
+#include <iomanip>
 
 
 
-namespace Clustering {
+#include "cluster.h"
 
-    LNode::LNode(const Point &p, LNodePtr n) : point(p) {
-        point = p;     //new value
-        next = n;           //next pointer
-    }
+namespace Clustering
+{
 
-
-    Cluster::Cluster() {
-        __size = 0; //set the size to ini 0;
-
-        __points = NULL; // set point to null
-    }
-
-
-    Cluster::Cluster(const Cluster &clu) : Cluster()      //copy constructor
+    LNode::LNode(const Point &p, LNodePtr n) : point (p)
     {
-        for (int i = 0; i < clu.__size; i++) {
-            add(clu[i]);
+        point = p;
+        next = n;
+    }
+
+    Cluster::Cluster()
+    {
+        __size = 0;
+        __points = nullptr;
+
+    }
+
+    Cluster::Cluster(const Cluster &c) : Cluster()
+    {
+        for (int i = 0; i < c.__size; i++)
+        {
+            add(c[i]);
         }
     }
 
-    Cluster &Cluster::operator=(const Cluster &cluster) {
-        if (this == &cluster)
-            return *this;
+    //need
+    Cluster& Cluster::operator=(const Cluster &c)
+    {
+        __points = nullptr;
 
-        else {
-            while (__points != NULL) {
-                LNodePtr cur;
-                cur = __points;
-                __points = __points->next;
-                delete cur;
-                __size = 0;
+
+
+        if (__size > 0)
+        {
+            __size = 0;
+            LNodePtr curr= __points;
+            LNodePtr prev;
+
+
+
+            while (curr != nullptr)
+            {
+                prev = curr;
+                curr = curr->next;
+
+                delete prev;
             }
 
-            for (int i = 0; i < cluster.__size; i++) {
-                add(cluster[i]);
-            }
         }
+
+        for (int i = 0; i < c.__size; ++i)
+        {
+            add(c[i]);
+        }
+
         return *this;
     }
 
-    Cluster::~Cluster()       //destructor
+
+    Cluster::~Cluster()
     {
-        if (__points != NULL) {
-            LNodePtr before = __points;
-            LNodePtr now = NULL;
 
-            while (before != NULL) {
-                now = before->next;
-                delete before;
-                before = now;
-            }
+        LNodePtr currNode;
+        while (__points != nullptr)
+        {
+            currNode = __points;
+            __points = currNode -> next;
+
+            delete currNode;
+
         }
-    }
-
-    int Cluster::getSize() const {
-        return __size;        //return the size
 
     }
 
-    void Cluster::add(const Point &point) {
-        LNodePtr insertPtr = new LNode(point, NULL);
-        LNodePtr curr = __points;
-        LNodePtr prev = __points;
 
-        if (__points == NULL) {
-            __points = insertPtr;
+    // Getters
+    int Cluster::getSize() const
+    {
+        return __size;
+
+    }
+
+
+    void Cluster::add(const Point &p)
+    {
+
+        if (__size == 0)
+        {
+            __points = new LNode(p, nullptr);
             __size++;
             return;
+
         }
-        else if (__points->next == NULL) {
-            if (point < __points->point) {
-                __points = insertPtr;
-                insertPtr->next = prev;
-                __size++;
+        else
+        {
+            if (contains(p))
                 return;
-            }
-            else {
-                __points->next = insertPtr;
-                __size++;
-                return;
-            }
-        }
-        else {
-            curr = curr->next;
-            if (point < prev->point) {
-                __points = insertPtr;
-                insertPtr->next = prev;
-                __size++;
-                return;
-            }
-            while (curr != nullptr) {
-                if (point < curr->point) {
-                    prev->next = insertPtr;
-                    insertPtr->next = curr;
-                    __size++;
-                    return;
+
+            LNodePtr next;
+            LNodePtr prev;
+
+            next = __points;
+            prev = nullptr;
+
+
+            while (next != nullptr)
+            {
+                if (p < next->point)
+                {
+
+                    if (prev == nullptr)
+                    {
+
+                        __points = new LNode(p, next);
+
+                        __size++;
+
+                        return;
+                    }
+                    else
+                    {
+
+                        prev->next = new LNode(p, next);
+
+                        __size++;
+
+                        return;
+                    }
                 }
-                curr = curr->next;
-                prev = prev->next;
+
+                prev = next;
+                next = next->next;
+
             }
-            prev->next = insertPtr;
+
+
+            prev->next = new LNode(p, nullptr);
+
             __size++;
-
         }
-
     }
 
-    const Point &Cluster::remove(const Point &point) {
-        LNodePtr currPtr = __points;
-        LNodePtr nextPtr = __points;
-        if (__points == NULL)
-            return point;
-        else if (__points->point == point) {
-            __points = __points->next;
-            delete currPtr;
-            __size--;
-        }
-        else {
-            currPtr = __points;
-            nextPtr = __points->next;
-            while (nextPtr != NULL) {
-                if (nextPtr->point == point) {
-                    currPtr->next = nextPtr->next;
-                    delete nextPtr;
+
+    const Point &Cluster::remove(const Point &p)
+    {
+
+        LNodePtr curr;
+        LNodePtr before = nullptr;
+
+        curr = __points;
+
+        if (contains(p))
+        {
+
+
+            while (curr != nullptr)
+            {
+                if (curr->point == p)
+                {
+                    __points = curr->next;
+
+                    delete curr;
+
                     __size--;
+
+                    break;
+
+                }
+                else if (before != nullptr)
+                {
+
+                    before->next = curr->next;
+
+                    delete curr;
+
+                    __size--;
+
                     break;
                 }
-                currPtr = nextPtr;
-                nextPtr = nextPtr->next;
+
+
+                before = curr;
+                curr = curr->next;
             }
         }
-        return point;
+
+        return p;
     }
 
 
-    bool Cluster::contains(const Point &point) {
-        LNodePtr cur = __points;
-        while (cur != NULL) {
-            if (cur->point == point)
+    bool Cluster::contains(const Point &p)
+    {
+        LNodePtr curr = this -> __points;
+        for ( ; curr != nullptr; curr = curr -> next)
+        {
+            if (curr -> point == p)
+            {
                 return true;
-            cur = cur->next;
+            }
         }
+
         return false;
+
     }
 
+    // Overloaded operators
+
+    // Members: Subscript
+    const Point &Cluster::operator[](unsigned int index) const
+    {
+
+        LNodePtr curr = __points;
+
+        for (int i = 0; i < index; i++ )
+        {
+
+            curr = curr -> next;
+        }
+
+        return curr -> point;
+
+    }
+
+    // Members: Compound assignment (Point argument)
+    Cluster &Cluster::operator+=(const Point &p)
+    {
+        add(p);
+
+        return *this;
+    }
+
+    Cluster &Cluster::operator-=(const Point &p)
+    {
+        remove(p);
+        return *this;
+    }
+
+    // Members: Compound assignment (Cluster argument)
+    Cluster &Cluster::operator+=(const Cluster &c) // union
+    {
+        for (int i = 0; i < c.__size; i++)
+        {
+            add(c[i]);
+        }
+
+
+        return *this;
+    }
+
+    Cluster &Cluster::operator-=(const Cluster &c) // (asymmetric) difference
+    {
+
+        for (int i = 0; i < c.__size; i++)
+        {
+
+            remove(c[i]);
+
+
+        }
+
+
+        return *this;
+    }
+
+
+
+    // Friends: IO
+    std::ostream &operator<<(std::ostream &o, const Cluster &c)
+    {
+
+        LNodePtr curr = c.__points;
+        if (curr != NULL)
+        {
+            for (int i = 0; i < c.__size; i++)
+            {
+                o << &curr[i] << std::endl;
+
+            }
+
+        }
+
+        return o;
+
+    }
+
+
+
+    std::istream &operator>>(std::istream &i, Cluster &c)
+    {
+        while (!i.eof())
+        {
+
+            Point p(1);
+            std::string line;
+
+            while (getline(i, line))
+            {
+                if (line.length() >0)
+                {
+                    std :: stringstream s (line);
+                    s >> p;
+                    c.add(p);
+                }
+            }
+        }
+        return i;
+
+
+
+    }
+
+
+    // Friends: Comparison
+    bool operator==(const Cluster &c, const Cluster &c1)
+    {
+        bool equal = true;
+        if (c.__size != c1.__size)
+        {
+            return false;
+        }
+        else if (c.__size == c1.__size)
+        {
+            return true;
+        }
+        while(c.__points != nullptr && c1.__points != nullptr)
+        {
+            if ( c.__points -> point != c1.__points -> point)
+                equal = false;
+            c.__points -> next = c.__points;
+            c1.__points -> next = c1.__points;
+        }
+        return true;
+    }
+
+
+    bool operator!=(const Cluster &c, const Cluster &c1)
+    {
+        return !(c==c1);
+    }
+
+    // Friends: Arithmetic (Cluster and Point)
+    const Cluster operator+(const Cluster &c, const Point &p)
+    {
+        Cluster newCluster(c);
+        newCluster += p;
+        return newCluster;
+
+    }
+
+    const Cluster operator-(const Cluster &c, const Point &p)
+    {
+        Cluster newCluster (c);
+        newCluster -= p;
+        return newCluster;
+    }
+
+    // Friends: Arithmetic (two Clusters)
+    const Cluster operator+(const Cluster &c, const Cluster &p) // union
+    {
+        Cluster newCluster(c);
+        newCluster += p;
+        return newCluster;
+    }
+
+    const Cluster operator-(const Cluster &c, const Cluster &p) // (asymmetric) difference
+    {
+        Cluster newCluster (c);
+        newCluster -= p;
+        return newCluster;
+    }
 
 
 }
-
